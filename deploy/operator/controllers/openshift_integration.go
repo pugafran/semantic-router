@@ -34,18 +34,16 @@ import (
 
 // reconcileRoute creates or deletes OpenShift Route based on config
 func reconcileRoute(ctx context.Context, c client.Client, scheme *runtime.Scheme, sr *vllmv1alpha1.SemanticRouter, isOpenShift bool) error {
-	logger := log.FromContext(ctx)
+	// Never touch Route resources on non-OpenShift clusters.
+	// This avoids NoMatch errors when route.openshift.io is not installed.
+	if !isOpenShift {
+		return nil
+	}
 
 	// Check if Route creation enabled
 	if sr.Spec.OpenShift == nil || sr.Spec.OpenShift.Routes == nil || !sr.Spec.OpenShift.Routes.Enabled {
 		// Delete Route if exists
 		return deleteRouteIfExists(ctx, c, sr)
-	}
-
-	// Only create on OpenShift
-	if !isOpenShift {
-		logger.Info("Route creation requested but not on OpenShift platform")
-		return nil
 	}
 
 	// Create or update Route

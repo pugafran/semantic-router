@@ -252,7 +252,10 @@ func (r *SemanticRouterReconciler) isRunningOnOpenShift(ctx context.Context) boo
 			},
 		}, &client.ListOptions{Limit: 1})
 
-		isOpenShift := err == nil || !meta.IsNoMatchError(err)
+		// Only treat as OpenShift when the Route API is actually available.
+		// Any error (NoMatch, forbidden, transport, etc.) should be treated as non-OpenShift
+		// to avoid hard-failing reconcile by trying to manage OpenShift Route resources.
+		isOpenShift := err == nil
 		r.isOpenShift = &isOpenShift
 
 		if isOpenShift {
